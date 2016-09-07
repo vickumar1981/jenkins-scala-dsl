@@ -90,9 +90,9 @@ object jenkins extends JenkinsApiService with LazyLogging {
       users.filter(u => config.userEmails.exists(_._1 == u)).foreach(u => {
         val userEmail = config.userEmails(u)
         val userRepos = reposList.filter(r => r._1 == u).sortWith(_._2 < _._2)
-        val emailTemplate = EmailTemplates.invalidPrivateReposTemplate(
+        val emailTemplate = EmailTemplates.invalidPersonalReposTemplate(
           urls.verify(config.baseUrl), userEmail, userRepos)
-        Mailer.sendEmail(userEmail, "Private repos reminder", emailTemplate)
+        Mailer.sendEmail(userEmail, "Personal repos reminder", emailTemplate)
         logger.info("Sent email to '%s (%s)'".format(userEmail, u))
       })
       val usersWithNoEmails = users.filterNot(u => config.userEmails.exists(_._1 == u))

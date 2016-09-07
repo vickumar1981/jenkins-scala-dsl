@@ -17,24 +17,23 @@ class JenkinsJob (val jobData: Job) {
 
   object xml {
     private lazy val jobConfigRequest = jenkins.api.get(urls.jobConfigUrl(jobData.url))
+    private lazy val xmlData: Option[scala.xml.Elem] = fetchXmlData()
 
-    def apply(): Option[scala.xml.Elem] =
-      jenkins.api.handleRequest[Option[scala.xml.Elem]](
+    private def fetchXmlData() = jenkins.api.handleRequest[Option[scala.xml.Elem]](
         jobConfigRequest, "No job configuration",
         (content) => Some(scala.xml.XML.loadString(content)),
         (msg) => None, (err) => None)
 
-    def checkGitUrls(): JobResult =
-      jenkins.api.handleRequest[JobResult](
-        jobConfigRequest, "No personal repos", (content) => {
-          val badUrls = jenkins.checkGitUrls(content.toString)
-          if (badUrls.isEmpty)
-            JobResult(jobData, true, List("No personal repos"))
-          else
-            JobResult(jobData, false, badUrls)
-        },
-        (msg) => JobResult(jobData, true, List(msg)),
-        (err) => JobResult(jobData, false, List(err)))
+    def apply(): Option[scala.xml.Elem] = xmlData
+
+    def checkGitUrls(): JobResult = if (xmlData.isDefined) {
+        val badUrls = jenkins.checkGitUrls(xmlData.toString)
+        if (badUrls.isEmpty)
+          JobResult(jobData, true, List("No personal repos"))
+        else
+          JobResult(jobData, false, badUrls)
+      }
+      else JobResult(jobData, true, List("No personal repos"))
   }
 }
 

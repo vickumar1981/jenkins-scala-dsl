@@ -2,14 +2,14 @@ package com.jenkins.sync.dsl.templates
 
 object EmailTemplates {
 
-  def invalidPrivateReposTemplate(jenkinsUrl: String, user: String,
+  def invalidPersonalReposTemplate(jenkinsUrl: String, user: String,
                                   repos: List[(String, String, String)]) = {
     """
-      |<h3>Private repositories for %s</h3>
+      |<h3>Personal repositories for %s</h3>
       |<p>Hi %s:
       |<br/><br/>
       |You are receiving this notificaiton because the following jenkins jobs are using
-      |private git repositories:
+      |personal git repositories:
       |</p>
       |<table>
       | <tr>
