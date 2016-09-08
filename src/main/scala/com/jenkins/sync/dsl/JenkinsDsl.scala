@@ -5,6 +5,8 @@ import com.jenkins.sync.dsl.templates.EmailTemplates
 import com.jenkins.sync.model.{JobResult, Jobs, Job}
 import com.jenkins.sync.util.{Mailer, SerializeJson}
 
+import com.jenkins.sync.dsl.JobConversions._
+
 import com.typesafe.scalalogging.LazyLogging
 
 object jenkins extends JenkinsApiService with LazyLogging {
@@ -98,6 +100,28 @@ object jenkins extends JenkinsApiService with LazyLogging {
       val usersWithNoEmails = users.filterNot(u => config.userEmails.exists(_._1 == u))
       logger.warn("No emails found for: %s".format(usersWithNoEmails.mkString(", ")))
       results
+    }
+
+    def sendNoVenvNeededEmail(results: List[JobResult]) = {
+      logger.info("Emailing users...")
+      val resultsData = scala.collection.mutable.ListBuffer[(String, String, String)]()
+      results.foreach( r => {
+        val recipientList = (r.job.xml().get \\ "recipientList").text.stripMargin
+        val recipients = (r.job.xml().get \\ "recipients").text.stripMargin
+        val sendToEmail = if (recipientList.nonEmpty) recipientList else recipients
+        if (sendToEmail.nonEmpty) {
+          sendToEmail.split(",").map(_.trim).filter(_.nonEmpty).foreach {
+            userEmail => r.values.foreach { v => resultsData += ((userEmail.toLowerCase, r.job.name, v)) } }
+        }
+        else logger.warn("[%s]: No emails found.".format(r.job.name))
+      })
+      val users = resultsData.map(_._1).distinct.sortWith(_ < _)
+      users.foreach(u => {
+        val emailTemplate = EmailTemplates.noVirtualEnvRequired(urls.verify(config.baseUrl),
+          resultsData.filter(_._1 == u).map(r => (r._2, r._3)).toList.sortWith(_._2 < _._2))
+        Mailer.sendEmail(u, "No virtualenv required", emailTemplate)
+        logger.info("Emailing %s".format(u))
+      })
     }
   }
 }
