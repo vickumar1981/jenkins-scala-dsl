@@ -2,7 +2,7 @@ package com.jenkins.sync.dsl
 
 import com.jenkins.sync.dsl.api.JenkinsApiService
 import com.jenkins.sync.dsl.templates.EmailTemplates
-import com.jenkins.sync.model.{JobResult, Jobs, Job}
+import com.jenkins.sync.model.{JobResult, Jobs, Job, Plugins, Plugin}
 import com.jenkins.sync.util.{Mailer, SerializeJson}
 
 import com.jenkins.sync.dsl.JobConversions._
@@ -28,6 +28,26 @@ object jenkins extends JenkinsApiService with LazyLogging {
       }
     }
     badUrls.toList
+  }
+
+  def listPlugins(pluginPattern: Option[String] = None) = {
+    val req = api.get(urls.listPlugins)
+    api.handleRequest[List[Plugin]](req, "Unable to list jenkins plugins.",
+      (content) => SerializeJson.read[Plugins](content) match {
+        case (string, Some(plugins)) =>
+          plugins.plugins.filter(p => (pluginPattern.isEmpty || p.shortName.matches(pluginPattern.get)))
+        case (string, None) => {
+          logger.error("Couldn't serialize plugins")
+          List.empty
+        }},
+      (msg) => {
+        logger.error("Couldn't serialize plugins, redirection error.")
+        List.empty
+      },
+      (err) => {
+        logger.error("Couldn't serialize plugins: %s.".format(err))
+        List.empty
+      }, isJson=true)
   }
 
   object jobs {

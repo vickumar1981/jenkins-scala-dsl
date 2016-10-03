@@ -99,5 +99,6 @@ abstract class JenkinsApiService extends LazyLogging {
     def jobConfigUrl(jobUrl: String) = "%s/config.xml".format(verify(jobUrl))
     def listJobsUrl(): String = "%s/api/json".format(verify(config.baseUrl))
     def listGitOrgs(): String = "%s/api/v3/organizations?per_page=100".format(verify(config.gitUrl))
+    def listPlugins(): String = "%s/pluginManager/api/json?depth=1".format(verify(config.baseUrl))
   }
 }
