@@ -30,9 +30,10 @@ object jenkins extends JenkinsApiService with LazyLogging {
     badUrls.toList
   }
 
-  def listPlugins(pluginPattern: Option[String] = None) = {
-    val req = api.get(urls.listPlugins)
-    api.handleRequest[List[Plugin]](req, "Unable to list jenkins plugins.",
+  object plugins {
+    private def listPlugins(pluginPattern: Option[String] = None) = {
+      val req = api.get(urls.listPlugins)
+      api.handleRequest[List[Plugin]](req, "Unable to list jenkins plugins.",
       (content) => SerializeJson.read[Plugins](content) match {
         case (string, Some(plugins)) =>
           plugins.plugins.filter(p => (pluginPattern.isEmpty || p.shortName.matches(pluginPattern.get)))
@@ -48,6 +49,10 @@ object jenkins extends JenkinsApiService with LazyLogging {
         logger.error("Couldn't serialize plugins: %s.".format(err))
         List.empty
       }, isJson=true)
+    }
+
+    def apply(): List[Plugin] = listPlugins()
+    def apply(pluginPattern: String): List[Plugin] = listPlugins(Some(pluginPattern))
   }
 
   object jobs {
